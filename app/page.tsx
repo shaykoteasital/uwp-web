@@ -6,7 +6,7 @@ export default function Home() {
     <div className="">
       <h1>Uwp Web</h1>
 
-      <Flipbook pdfPath={"/pdf/manifesto.pdf"} />
+      <Flipbook pdfPath={"/pdf/googledoc.pdf"} />
     </div>
   );
 }
