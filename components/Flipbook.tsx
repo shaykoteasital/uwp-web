@@ -25,6 +25,7 @@ interface FlipbookProps {
 
 export default function Flipbook({
   pdfPath = '/pdf/manifesto.pdf',
+  // pdfPath = '/pdf/googledoc.pdf',
   pdfSize = '43 MB',
 }: FlipbookProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
