@@ -24,92 +24,167 @@ interface FlipbookProps {
 }
 
 export default function Flipbook({
-  pdfPath ,
+  pdfPath = '/pdf/manifesto.pdf',
   pdfSize = '43 MB',
 }: FlipbookProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const [containerHeight, setContainerHeight] = useState('100vh')
   const [error, setError] = useState<string | null>(null)
-  const initTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
+    // Full viewport height
+    const updateHeight = () => setContainerHeight('100vh')
+    updateHeight()
+    window.addEventListener('resize', updateHeight)
+
     if (typeof window === 'undefined') return
 
-    // Helper that returns the absolute path to the worker so deployment origin is included
+    // Use absolute worker URL so the worker is fetched from the same origin in production
     const workerUrl = `${window.location.origin}/flipbook/js/libs/pdf.worker.min.js`
 
-    // Set PDF.js worker src if pdfjsLib is present
+    // If pdfjsLib loaded, set the worker path right away
     if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl
+      try {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl
+        console.log('pdfjs worker set to', workerUrl)
+      } catch (e) {
+        console.warn('Unable to set pdfjs workerSrc:', e)
+      }
     }
 
-    // Wait for jQuery and flipBook plugin to be ready
+    // Poll for jQuery and flipBook plugin readiness
     let tries = 0
-    const maxTries = 20
-    const interval = 300 // ms
+    const maxTries = 30
+    const delay = 250
+    let timer = 0
 
-    const checkAndInit = () => {
+    const initFlipbook = () => {
       tries++
       const $ = window.jQuery as any
-      const container = containerRef.current as any
+      const containerEl = containerRef.current
 
-      if (!$ || !$.fn || typeof $.fn.flipBook !== 'function') {
+      // Check jQuery and plugin
+      if (!window.jQuery || !window.jQuery.fn || typeof window.jQuery.fn.flipBook !== 'function') {
         if (tries >= maxTries) {
-          setError('Flipbook assets failed to load (jQuery or plugin missing). Check network console for 404s.')
+          setError('Flipbook assets failed to load: jQuery or flipBook plugin missing. Check Network for 404s.')
+          console.error('Flipbook init failed: jQuery or plugin not available after retries')
           return
         }
-        initTimeoutRef.current = window.setTimeout(checkAndInit, interval)
+        timer = window.setTimeout(initFlipbook, delay)
         return
       }
 
-      if (!container) {
-        setError('Flipbook container not found.')
+      if (!containerEl) {
+        setError('Flipbook container not found in DOM')
+        console.error('Flipbook init failed: container element missing')
         return
+      }
+
+      // Ensure pdfjsLib worker path is set just before init (in case pdf.min.js loaded later)
+      if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl
       }
 
       try {
-        // Initialize the flipbook plugin
-        $(container).flipBook({
+        // Initialize flipbook using jQuery instance
+        $(containerEl).flipBook({
           pdfUrl: pdfPath,
           pdfjsLib: window.pdfjsLib,
           pdfJsWorkerSrc: workerUrl,
 
+          // Layout and display
           pageMode: 'double',
           singlePageMode: false,
+
+          // Performance optimization
           textureSize: 2048,
           thumbnailTextureSize: 256,
           preloadPages: 3,
+
+          // UI Controls
+          controlsPosition: 'bottom',
+          menuSelector: true,
+          menuTransparent: false,
+          menuOverBook: true,
+
+          // Features
           downloadURL: pdfPath,
           downloadEnabled: true,
           printEnabled: true,
           searchEnabled: true,
+
+          // Table of Contents
           tableOfContents: true,
           tableOfContentsSidebar: true,
+
+          // Zoom
+          zoomMax: 4,
+          zoomMin: 0.95,
+          zoomStep: 0.1,
+
+          // Page flipping
           flipDuration: 1000,
+          flipSound: false,
+
+          // Mobile & responsive
           mobileScrollSupport: true,
           responsiveView: true,
           autoHeight: false,
           height: window.innerHeight,
+
+          // Styling
           backgroundColor: '#2C3E50',
           backgroundTransparent: false,
+
+          // Buttons
           btnNext: { enabled: true, title: 'Next page' },
+          btnPrev: { enabled: true, title: 'Previous page' },
+          btnZoomIn: { enabled: true, title: 'Zoom in' },
+          btnZoomOut: { enabled: true, title: 'Zoom out' },
+          btnDownloadPdf: { enabled: true, title: 'Download PDF', url: pdfPath },
+          btnPrint: { enabled: true, title: 'Print' },
+          btnThumbs: { enabled: true, title: 'Pages' },
+          btnToc: { enabled: true, title: 'Table of Contents' },
+          btnSearch: { enabled: true, title: 'Search' },
+
+          // Force container mode
+          lightBox: false,
+          lightboxFullscreen: false,
+          lightboxStartOpen: false,
+          lightboxCloseOnBack: false,
+          deeplinking: { enabled: false },
         })
-      } catch (e) {
-        setError(`Flipbook initialization error: ${(e as Error).message}`)
+
+        console.log('Flipbook initialized successfully in container mode')
+      } catch (initErr) {
+        setError(`Flipbook initialization error: ${(initErr as Error).message}`)
+        console.error('Flipbook initialization exception:', initErr)
       }
     }
 
-    checkAndInit()
+    // Start initialization attempts
+    initFlipbook()
 
+    // Cleanup
     return () => {
-      if (initTimeoutRef.current) {
-        clearTimeout(initTimeoutRef.current)
-      }
-      // if needed: destroy flipbook instance
+      if (timer) clearTimeout(timer)
+      window.removeEventListener('resize', updateHeight)
     }
   }, [pdfPath])
 
   return (
-    <div>
+    <div className="w-full flex flex-col">
+      <style jsx global>{`
+        .flipbook-overlay { display: none !important; }
+        body.flipbook-overflow-hidden { overflow: auto !important; position: static !important; }
+        @media (max-width: 768px) {
+          .flipbook-left-arrow, .flipbook-right-arrow {
+            height: 24px !important; font-size: 24px !important; width: 24px !important;
+            margin-top: -12px !important; padding: 6px !important;
+          }
+        }
+      `}</style>
+
       {error ? (
         <div style={{ color: 'red', padding: '1rem' }}>
           <strong>{error}</strong>
@@ -118,8 +193,26 @@ export default function Flipbook({
           </div>
         </div>
       ) : (
-        <div id="flipbook-container" ref={containerRef} style={{ width: '100%', height: '100vh' }} />
+        <div
+          ref={containerRef}
+          id="flipbook-container"
+          className="w-full bg-[#2C3E50] overflow-hidden"
+          style={{ height: containerHeight, position: 'relative' }}
+        />
       )}
+
+      <div className="w-full bg-[#F5F5F5] py-6 px-4 text-center">
+        <p className="text-xs sm:text-sm md:text-base text-gray-700 mb-4">
+          Use the arrows to turn pages. For mobile users, you can also download the PDF.
+        </p>
+        <a
+          href={pdfPath}
+          download
+          className="inline-block bg-uwp-red text-white px-6 py-3 sm:px-8 sm:py-4 rounded-lg font-bold text-sm sm:text-base hover:bg-[#c01820] transition-colors shadow-md"
+        >
+          Download PDF ({pdfSize})
+        </a>
+      </div>
     </div>
   )
 }
