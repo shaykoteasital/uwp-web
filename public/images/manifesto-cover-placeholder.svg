@@ -1,0 +1,21 @@
+<svg width="400" height="566" viewBox="0 0 400 566" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="566" fill="#ED1C26"/>
+
+  <!-- Decorative elements -->
+  <rect x="0" y="0" width="400" height="100" fill="#C41820"/>
+  <rect x="0" y="466" width="400" height="100" fill="#C41820"/>
+
+  <!-- Year -->
+  <text x="200" y="80" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle">2025</text>
+
+  <!-- Title -->
+  <text x="200" y="240" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="white" text-anchor="middle">MANIFESTO</text>
+
+  <!-- Subtitle -->
+  <text x="200" y="300" font-family="Arial, sans-serif" font-size="28" font-weight="300" fill="white" text-anchor="middle">Reclaiming</text>
+  <text x="200" y="340" font-family="Arial, sans-serif" font-size="28" font-weight="300" fill="white" text-anchor="middle">Our Future</text>
+
+  <!-- Party name -->
+  <text x="200" y="520" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">UNITED WORKERS PARTY</text>
+</svg>

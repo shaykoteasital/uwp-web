@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,10 +25,32 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="stylesheet" href="/flipbook/css/flipbook.min.css" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <Script
+          src="https://code.jquery.com/jquery-3.6.0.min.js"
+          strategy="beforeInteractive"
+        />
+        {/* PDF.js - Required for PDF rendering */}
+        <Script
+          src="/flipbook/js/libs/pdf.min.js"
+          strategy="beforeInteractive"
+        />
+        {/* Flipbook PDF Service */}
+        <Script
+          src="/flipbook/js/flipbook.pdfservice.min.js"
+          strategy="beforeInteractive"
+        />
+        {/* Flipbook JS */}
+        <Script
+          src="/flipbook/js/flipbook.min.js"
+          strategy="beforeInteractive"
+        />
       </body>
     </html>
   );
